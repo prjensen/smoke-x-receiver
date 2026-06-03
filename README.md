@@ -81,7 +81,7 @@ An ESP32 with attached Semtech LoRa transceiver operating in the 915 MHz ISM ban
 
 ### Software
 
-- ESP-IDF SDK v4.4 [installation instructions](https://docs.espressif.com/projects/esp-idf/en/release-v4.4/esp32/get-started/index.html)
+- ESP-IDF SDK v5.2 [installation instructions](https://docs.espressif.com/projects/esp-idf/en/release-v5.2/esp32/get-started/index.html)
 - Node.js and npm (to build the web UI assets)
 
 ---
@@ -98,10 +98,11 @@ An ESP32 with attached Semtech LoRa transceiver operating in the 915 MHz ISM ban
   ```bash
   $ git clone --recurse-submodules git@github.com:G-Two/smoke-x-receiver.git
   $ cd smoke-x-receiver
+  $ git submodule update --init --recursive
   ```
-- If you have Cmake version 4 or later, you may need to enable backwards compatibility with Cmake 3.5.
+- If you have Cmake version 4 or later, you may need to enable backwards compatibility with Cmake 3.16.
   ```bash
-  $ export CMAKE_POLICY_VERSION_MINIMUM=3.5
+  $ export CMAKE_POLICY_VERSION_MINIMUM=3.16
   ```
 
 ### Configure
@@ -272,7 +273,7 @@ $ idf.py monitor
 
 ### Main Application
 
-This application is built with the ESP-IDF v4 SDK and has external dependencies with the following LoRa modem drivers:
+This application is built with the ESP-IDF v5.2 SDK and has external dependencies with the following LoRa modem drivers:
 
 - [esp-idf-sx126x](https://github.com/nopnop2002/esp-idf-sx126x)
 - [esp-idf-sx127x](https://github.com/nopnop2002/esp-idf-sx127x)
