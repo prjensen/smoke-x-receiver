@@ -3,7 +3,7 @@
 #include <esp_event.h>
 #include <esp_log.h>
 #include <string.h>
-#include <esp_wpa2.h>
+#include <esp_eap_client.h>
 #include <esp_netif.h>
 #include <nvs.h>
 #include "app_wifi.h"
@@ -200,19 +200,19 @@ void app_wifi_init() {
                     break;
                 case WIFI_AUTH_WPA2_ENTERPRISE:
                     app_wifi_init_sta(app_wifi_params.ssid, NULL);
-                    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_identity(
+                    ESP_ERROR_CHECK(esp_eap_client_set_identity(
                         (unsigned char *)app_wifi_params.username,
                         strlen(app_wifi_params.username)));
-                    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_username(
+                    ESP_ERROR_CHECK(esp_eap_client_set_username(
                         (unsigned char *)app_wifi_params.username,
                         strlen(app_wifi_params.username)));
-                    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_password(
+                    ESP_ERROR_CHECK(esp_eap_client_set_password(
                         (unsigned char *)app_wifi_params.password,
                         strlen(app_wifi_params.password)));
                     ESP_ERROR_CHECK(
-                        esp_wifi_sta_wpa2_ent_set_ttls_phase2_method(
+                        esp_eap_client_set_ttls_phase2_method(
                             ESP_EAP_TTLS_PHASE2_MSCHAPV2));
-                    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_enable());
+                    ESP_ERROR_CHECK(esp_wifi_sta_enterprise_enable());
                     break;
                 case WIFI_AUTH_OPEN:
                     app_wifi_init_sta(app_wifi_params.ssid, NULL);
