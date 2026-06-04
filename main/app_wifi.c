@@ -3,13 +3,15 @@
 #include <esp_event.h>
 #include <esp_log.h>
 #include <string.h>
-#include <esp_wpa2.h>
+#include <esp_eap_client.h>
 #include <esp_netif.h>
 #include <nvs.h>
 #include "app_wifi.h"
+#include <inttypes.h>
 
 #define STA_CONNECT_TIMEOUT_MS 30000
 #define HOSTNAME "smoke_x"
+#define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 
 static const char *TAG = "app_wifi";
 static EventGroupHandle_t wifi_event_group = NULL;
@@ -34,12 +36,12 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
     if (event_id == WIFI_EVENT_AP_STACONNECTED) {
         wifi_event_ap_staconnected_t *event =
             (wifi_event_ap_staconnected_t *)event_data;
-        ESP_LOGI(TAG, "station " MACSTR " join, AID=%d", MAC2STR(event->mac),
+        ESP_LOGI(TAG, "station %02x:%02x:%02x:%02x:%02x:%02x join, AID=%" PRIu8, MAC2STR(event->mac),
                  event->aid);
     } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
         wifi_event_ap_stadisconnected_t *event =
             (wifi_event_ap_stadisconnected_t *)event_data;
-        ESP_LOGI(TAG, "station " MACSTR " leave, AID=%d", MAC2STR(event->mac),
+        ESP_LOGI(TAG, "station %02x:%02x:%02x:%02x:%02x:%02x leave, AID=%" PRIu8, MAC2STR(event->mac),
                  event->aid);
     }
 }
@@ -102,6 +104,7 @@ static void app_wifi_init_sta(const char *ssid, const char *password) {
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_netif_set_hostname(sta_netif, HOSTNAME));
 }
 
 bool app_wifi_validate_params(app_wifi_params_t *params) {
@@ -197,19 +200,19 @@ void app_wifi_init() {
                     break;
                 case WIFI_AUTH_WPA2_ENTERPRISE:
                     app_wifi_init_sta(app_wifi_params.ssid, NULL);
-                    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_identity(
+                    ESP_ERROR_CHECK(esp_eap_client_set_identity(
                         (unsigned char *)app_wifi_params.username,
                         strlen(app_wifi_params.username)));
-                    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_username(
+                    ESP_ERROR_CHECK(esp_eap_client_set_username(
                         (unsigned char *)app_wifi_params.username,
                         strlen(app_wifi_params.username)));
-                    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_password(
+                    ESP_ERROR_CHECK(esp_eap_client_set_password(
                         (unsigned char *)app_wifi_params.password,
                         strlen(app_wifi_params.password)));
                     ESP_ERROR_CHECK(
-                        esp_wifi_sta_wpa2_ent_set_ttls_phase2_method(
+                        esp_eap_client_set_ttls_phase2_method(
                             ESP_EAP_TTLS_PHASE2_MSCHAPV2));
-                    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_enable());
+                    ESP_ERROR_CHECK(esp_wifi_sta_enterprise_enable());
                     break;
                 case WIFI_AUTH_OPEN:
                     app_wifi_init_sta(app_wifi_params.ssid, NULL);
@@ -218,8 +221,6 @@ void app_wifi_init() {
                     ESP_LOGE(TAG, "Unsupported wifi auth mode");
             }
             ESP_ERROR_CHECK(esp_wifi_start());
-            ESP_ERROR_CHECK(
-                tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, HOSTNAME));
 
             xTaskCreate(&sta_fail_detect, "app_wifi_sta_fail_detect", 4096,
                         NULL, 5, NULL);

@@ -3,6 +3,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <freertos/task.h>
+#include <inttypes.h>
 #include "app_lora.h"
 
 #ifdef CONFIG_SX126x
@@ -38,7 +39,7 @@ static int validate_params(app_lora_params_t *in_params) {
         if (range_check(in_params->tx_power, TX_POWER_MIN, TX_POWER_MAX)) {
             radio_params.tx_power = in_params->tx_power;
         } else {
-            ESP_LOGE(TAG, "invalid tx power %d", in_params->tx_power);
+            ESP_LOGE(TAG, "invalid tx power %" PRIu8, in_params->tx_power);
         }
     }
 
@@ -46,7 +47,7 @@ static int validate_params(app_lora_params_t *in_params) {
         if (range_check(in_params->frequency, FREQ_MIN, FREQ_MAX)) {
             radio_params.frequency = in_params->frequency;
         } else {
-            ESP_LOGE(TAG, "invalid frequency %d", in_params->frequency);
+            ESP_LOGE(TAG, "invalid frequency %" PRIu32, in_params->frequency);
         }
     }
 
@@ -54,7 +55,7 @@ static int validate_params(app_lora_params_t *in_params) {
         if (range_check(in_params->bandwidth, BW_MIN, BW_MAX)) {
             radio_params.bandwidth = in_params->bandwidth;
         } else {
-            ESP_LOGE(TAG, "invalid bandwidth %d", in_params->bandwidth);
+            ESP_LOGE(TAG, "invalid bandwidth %" PRIu32, in_params->bandwidth);
         }
     }
 
@@ -80,7 +81,7 @@ static int validate_params(app_lora_params_t *in_params) {
         if (range_check(in_params->sync_word, SYNC_WORD_MIN, SYNC_WORD_MAX)) {
             radio_params.sync_word = in_params->sync_word;
         } else {
-            ESP_LOGE(TAG, "invalid sync word %d", in_params->sync_word);
+            ESP_LOGE(TAG, "invalid sync word %" PRIu8, in_params->sync_word);
         }
     }
 
@@ -88,7 +89,7 @@ static int validate_params(app_lora_params_t *in_params) {
         if (range_check(in_params->coding_rate, CR_MIN, CR_MAX)) {
             radio_params.coding_rate = in_params->coding_rate;
         } else {
-            ESP_LOGE(TAG, "invalid coding rate %d", in_params->coding_rate);
+            ESP_LOGE(TAG, "invalid coding rate %" PRIu8, in_params->coding_rate);
         }
     }
 
@@ -108,7 +109,7 @@ static void tx_msg(char *msg) {
             lora_receive();
         }
 #endif
-        ESP_LOGI(TAG, "%d bytes transmitted (%s)", len, msg);
+        ESP_LOGI(TAG, "%zu bytes transmitted (%s)", len, msg);
         xSemaphoreGive(xRadioSemaphore);
     }
 }
@@ -121,7 +122,7 @@ static void tx_task(void *pvParameter) {
         xTaskNotifyGive(args->sending_task);
         uint32_t interval = args->repeat_interval_ms;
 
-        ESP_LOGI(TAG, "Starting LoRa Tx msg='%s' interval=%dms", msg, interval);
+        ESP_LOGI(TAG, "Starting LoRa Tx msg='%s' interval=%" PRIu32 "ms", msg, interval);
         while (1) {
             tx_msg(msg);
             vTaskDelay(pdMS_TO_TICKS(interval));
@@ -220,7 +221,7 @@ int app_lora_get_params(app_lora_params_t *out_params) {
 }
 
 int app_lora_set_params(app_lora_params_t *in_params,
-                        xTaskHandle calling_task) {
+                        TaskHandle_t calling_task) {
     if (validate_params(in_params) == ESP_OK) {
         if (xSemaphoreTake(xRadioSemaphore, portMAX_DELAY)) {
 #ifdef CONFIG_SX126x
@@ -232,9 +233,9 @@ int app_lora_set_params(app_lora_params_t *in_params,
 #else
             ESP_LOGD(TAG, "Setting radio parameters");
             lora_idle();
-            ESP_LOGD(TAG, "  Frequency %d", radio_params.frequency);
+            ESP_LOGD(TAG, "  Frequency %" PRIu32, radio_params.frequency);
             lora_set_frequency(radio_params.frequency);
-            ESP_LOGD(TAG, "  Bandwidth %d", radio_params.bandwidth);
+            ESP_LOGD(TAG, "  Bandwidth %" PRIu32, radio_params.bandwidth);
             lora_set_bandwidth(radio_params.bandwidth);
             ESP_LOGD(TAG, "  Spreading Factor %d",
                      radio_params.spreading_factor);
@@ -265,7 +266,7 @@ int app_lora_set_params(app_lora_params_t *in_params,
             xTaskNotifyGive(calling_task);
             ESP_LOGD(
                 TAG,
-                "New radio parameters set\n f=%d\n bw=%d\n sf=%d\n "
+                "New radio parameters set\n f=%" PRIu32 "\n bw=%" PRIu32 "\n sf=%d\n "
                 "tx_power=%d\n cr=%d\n sync=%x\n impl_hdr=%d\n crc_on=%d\n",
                 radio_params.frequency, radio_params.bandwidth,
                 radio_params.spreading_factor, radio_params.tx_power,

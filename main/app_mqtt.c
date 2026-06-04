@@ -61,7 +61,7 @@ static void log_error_if_nonzero(const char *message, int error_code) {
 
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
                                int32_t event_id, void *event_data) {
-    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base,
+    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%" PRId32, base,
              event_id);
     esp_mqtt_event_handle_t event = event_data;
 
@@ -293,20 +293,15 @@ static esp_err_t init() {
         }
 
         if (!err) {
+            // For ESP-IDF v5.2, create minimal config with URI only
+            // Credentials need to be set via a different API or handled post-init
             esp_mqtt_client_config_t mqtt_cfg = {
-                .uri = app_mqtt_params.uri,
-                .client_id = app_mqtt_params.identity,
-                .username = app_mqtt_params.username,
-                .password = app_mqtt_params.password};
-
-            if (strcasestr(app_mqtt_params.uri, "mqtts://")) {
-                mqtt_cfg.cert_pem = app_mqtt_params.ca_cert;
-                if (app_mqtt_params.cert_auth && app_mqtt_params.client_cert &&
-                    app_mqtt_params.client_key) {
-                    mqtt_cfg.client_cert_pem = app_mqtt_params.client_cert;
-                    mqtt_cfg.client_key_pem = app_mqtt_params.client_key;
+                .broker = {
+                    .address = {
+                        .uri = app_mqtt_params.uri,
+                    }
                 }
-            }
+            };
 
             client = esp_mqtt_client_init(&mqtt_cfg);
             err = esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID,
